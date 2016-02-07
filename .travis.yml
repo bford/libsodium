@@ -27,14 +27,12 @@ script:
 env:
   global:
    - secure: "P4qv8aX+nogLlSy0lTMDIR6I5OLXq+qMijB4s+oCLME5BL2xPAn3v0QG5IoHdnU0ncRc1tEYZxN3F48Rp+Q7+wEVqSBLFS3oXzfNHJGEYoiaAcPNWO0R1kF8rcy8AuoAEomNeYS+5vhzQtaXklNtx/250p6MgGuMsdpMsRUKS/U="
+   - COVERITY_SCAN_PROJECT_NAME="jedisct1/libsodium"
+   - COVERITY_SCAN_BRANCH_PATTERN="coverity_scan"
+   - COVERITY_SCAN_NOTIFICATION_EMAIL="coverity@pureftpd.org"
+   - COVERITY_SCAN_BUILD_COMMAND="make check"
 
-addons:
-  coverity_scan:
-    project:
-      name: jedisct1/libsodium
-      version: 1.0.3
-      description: libsodium
-      notification_email: coverityscan@pureftpd.org
-      build_command_prepend: ./autogen.sh ; ./configure
-      build_command: make -j4
-      branch_pattern: coverity_scan
+before_install:
+ - ./autogen.sh
+ - ./configure --disable-dependency-tracking
+ - curl -s "https://scan.coverity.com/scripts/travisci_build_coverity_scan.sh" | bash || true
