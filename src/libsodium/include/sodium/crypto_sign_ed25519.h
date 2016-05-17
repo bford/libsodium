@@ -71,7 +71,7 @@ SODIUM_EXPORT
 int crypto_sign_ed25519_threshold_policy(const unsigned char *mask,
 					 unsigned long pkcount,
 					 void *data);
-#define crypto_sign_ed25519_threshold_data(T) ((void*)(T))
+#define crypto_sign_ed25519_threshold_data(T) ((void*)(intptr_t)(T))
 
 SODIUM_EXPORT
 int crypto_sign_ed25519_keypair(unsigned char *pk, unsigned char *sk);

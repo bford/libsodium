@@ -77,21 +77,6 @@ small_order(const unsigned char R[32])
 }
 #endif
 
-static inline int
-check_sig(const unsigned char *sig) {
-#ifndef ED25519_COMPAT
-    if (crypto_sign_check_S_lt_L(sig + 32) != 0 ||
-        small_order(sig) != 0) {
-        return -1;
-    }
-#else
-    if (sig[63] & 224) {
-        return -1;
-    }
-#endif
-    return 0;
-}
-
 int
 crypto_sign_ed25519_verify_detached(const unsigned char *sig,
                                     const unsigned char *m,
@@ -106,9 +91,16 @@ crypto_sign_ed25519_verify_detached(const unsigned char *sig,
     ge_p3 A;
     ge_p2 R;
 
-    if (check_sig(sig) != 0) {
-	return -1;
+#ifndef ED25519_COMPAT
+    if (crypto_sign_check_S_lt_L(sig + 32) != 0 ||
+        small_order(sig) != 0) {
+        return -1;
     }
+#else
+    if (sig[63] & 224) {
+        return -1;
+    }
+#endif
     if (ge_frombytes_negate_vartime(&A, pk) != 0) {
         return -1;
     }
@@ -183,8 +175,8 @@ crypto_sign_ed25519_verify_cosi(const unsigned char *sig,
     if (siglen != 64 + (pkcount+7)/8) {
 	return -1;
     }
-    if (check_sig(sig) != 0) {
-	return -1;
+    if (sig[63] & 224) {
+        return -1;
     }
 
     if (policy == NULL) {
@@ -233,14 +225,14 @@ crypto_sign_ed25519_verify_cosi(const unsigned char *sig,
 int crypto_sign_ed25519_threshold_policy(const unsigned char *mask,
 					 unsigned long pkcount,
 					 void *data) {
-    unsigned int i, enabled = 0;
+    unsigned int i, threshold = (uintptr_t)data, enabled = 0;
 
     for (i = 0; i < pkcount; i++) {
 	if ((mask[i/8] & (1 << (i&7))) == 0) {
 	    enabled++;
 	}
     }
-    if (enabled < (unsigned int)data) {
+    if (enabled < threshold) {
 	return -1;
     }
     return 0;
