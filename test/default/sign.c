@@ -1063,7 +1063,7 @@ int main(void)
 {
     unsigned char extracted_seed[crypto_sign_ed25519_SEEDBYTES];
     unsigned char extracted_pk[crypto_sign_ed25519_PUBLICKEYBYTES];
-    unsigned char sig[crypto_sign_BYTES];
+    unsigned char sig[crypto_sign_BYTES + 1];
     unsigned char sm[1024 + crypto_sign_BYTES];
     unsigned char m[1024];
     unsigned char skpk[crypto_sign_SECRETKEYBYTES];
@@ -1145,6 +1145,15 @@ int main(void)
                                         (const unsigned char *)test_data[i].m,
                                         i, test_data[i].pk) != 0) {
             printf("detached signature verification failed: [%u]\n", i);
+            continue;
+        }
+	sig[crypto_sign_BYTES] = 0;
+        if (crypto_sign_verify_cosi(sig, crypto_sign_BYTES+1,
+                                (const unsigned char *)test_data[i].m,
+                                i, test_data[i].pk, 1,
+				crypto_sign_ed25519_threshold_policy,
+				crypto_sign_ed25519_threshold_data(1)) != 0) {
+            printf("collective signature verification failed: [%u]\n", i);
             continue;
         }
     }

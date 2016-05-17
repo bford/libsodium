@@ -77,6 +77,21 @@ small_order(const unsigned char R[32])
 }
 #endif
 
+static inline int
+check_sig(const unsigned char *sig) {
+#ifndef ED25519_COMPAT
+    if (crypto_sign_check_S_lt_L(sig + 32) != 0 ||
+        small_order(sig) != 0) {
+        return -1;
+    }
+#else
+    if (sig[63] & 224) {
+        return -1;
+    }
+#endif
+    return 0;
+}
+
 int
 crypto_sign_ed25519_verify_detached(const unsigned char *sig,
                                     const unsigned char *m,
@@ -91,16 +106,9 @@ crypto_sign_ed25519_verify_detached(const unsigned char *sig,
     ge_p3 A;
     ge_p2 R;
 
-#ifndef ED25519_COMPAT
-    if (crypto_sign_check_S_lt_L(sig + 32) != 0 ||
-        small_order(sig) != 0) {
-        return -1;
+    if (check_sig(sig) != 0) {
+	return -1;
     }
-#else
-    if (sig[63] & 224) {
-        return -1;
-    }
-#endif
     if (ge_frombytes_negate_vartime(&A, pk) != 0) {
         return -1;
     }
@@ -152,3 +160,89 @@ badsig:
     }
     return -1;
 }
+
+int
+crypto_sign_ed25519_verify_cosi(const unsigned char *sig,
+				unsigned long siglen,
+                                const unsigned char *m,
+                                unsigned long long mlen,
+                                const unsigned char *pklist,
+				unsigned long pkcount,
+				crypto_sign_cosi_policy policy,
+				void *policy_data)
+{
+    crypto_hash_sha512_state hs;
+    const unsigned char *mask = sig + 64;
+    unsigned char h[64];
+    unsigned char rcheck[32];
+    unsigned char pkagg[32];
+    unsigned int  i, j;
+    ge_p3 A, indA;
+    ge_p2 R;
+
+    if (siglen != 64 + (pkcount+7)/8) {
+	return -1;
+    }
+    if (check_sig(sig) != 0) {
+	return -1;
+    }
+
+    if (policy == NULL) {
+	policy = crypto_sign_ed25519_threshold_policy;
+	policy_data = crypto_sign_ed25519_threshold_data(pkcount);
+    }
+    if (policy(mask, pkcount, policy_data) != 0) {
+	return -1;
+    }
+
+    ge_p3_0(&A);
+    for (i = 0; i < pkcount; i++) {
+        const unsigned char *ipk = pklist + 32*i;
+        unsigned char d = 0;
+
+        if (ge_frombytes_negate_vartime(&indA, ipk) != 0) {
+            return -1;
+        }
+        for (j = 0; j < 32; ++j) {
+            d |= ipk[j];
+        }
+        if (d == 0) {
+            return -1;
+        }
+        if ((mask[i/8] & (1 << (i&7))) == 0) {
+            ge_p3_sub(&A, &A, &indA);
+        }
+    }
+    ge_p3_tobytes(pkagg, &A);
+
+    crypto_hash_sha512_init(&hs);
+    crypto_hash_sha512_update(&hs, sig, 32);
+    crypto_hash_sha512_update(&hs, pkagg, 32);
+    crypto_hash_sha512_update(&hs, m, mlen);
+    crypto_hash_sha512_final(&hs, h);
+    sc_reduce(h);
+
+    ge_p3_neg(&A, &A);
+    ge_double_scalarmult_vartime(&R, h, &A, sig + 32);
+    ge_tobytes(rcheck, &R);
+
+    return crypto_verify_32(rcheck, sig) | (-(rcheck == sig)) |
+           sodium_memcmp(sig, rcheck, 32);
+}
+
+int crypto_sign_ed25519_threshold_policy(const unsigned char *mask,
+					 unsigned long pkcount,
+					 void *data) {
+    unsigned int i, enabled = 0;
+
+    for (i = 0; i < pkcount; i++) {
+	if ((mask[i/8] & (1 << (i&7))) == 0) {
+	    enabled++;
+	}
+    }
+    if (enabled < (unsigned int)data) {
+	return -1;
+    }
+    return 0;
+}
+

@@ -137,6 +137,9 @@ extern void ge_p1p1_to_p2(ge_p2 *,const ge_p1p1 *);
 extern void ge_p1p1_to_p3(ge_p3 *,const ge_p1p1 *);
 extern void ge_p2_dbl(ge_p1p1 *,const ge_p2 *);
 extern void ge_p3_dbl(ge_p1p1 *,const ge_p3 *);
+extern void ge_p3_neg(ge_p3 *r,ge_p3 *a);
+extern void ge_p3_add(ge_p3 *r,ge_p3 *a,ge_p3 *b);
+extern void ge_p3_sub(ge_p3 *r,ge_p3 *a,ge_p3 *b);
 
 extern void ge_madd(ge_p1p1 *,const ge_p3 *,const ge_precomp *);
 extern void ge_msub(ge_p1p1 *,const ge_p3 *,const ge_precomp *);

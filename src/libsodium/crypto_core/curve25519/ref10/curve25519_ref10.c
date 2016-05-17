@@ -1421,6 +1421,41 @@ void ge_p3_dbl(ge_p1p1 *r,const ge_p3 *p)
     ge_p2_dbl(r,&q);
 }
 
+/*
+ r = -a
+ */
+
+void ge_p3_neg(ge_p3 *r,ge_p3 *a) {
+    fe_neg(r->X,a->X);
+    fe_copy(r->Y,a->Y);
+    fe_copy(r->Z,a->Z);
+    fe_neg(r->T,a->T);
+}
+
+/*
+ r = a + b
+ */
+
+void ge_p3_add(ge_p3 *r,ge_p3 *a,ge_p3 *b) {
+    ge_cached bc;
+    ge_p1p1 t;
+    ge_p3_to_cached(&bc,b);
+    ge_add(&t,a,&bc);
+    ge_p1p1_to_p3(r,&t);
+}
+
+/*
+ r = a - b
+ */
+
+void ge_p3_sub(ge_p3 *r,ge_p3 *a,ge_p3 *b) {
+    ge_cached bc;
+    ge_p1p1 t;
+    ge_p3_to_cached(&bc,b);
+    ge_sub(&t,a,&bc);
+    ge_p1p1_to_p3(r,&t);
+}
+
 void ge_precomp_0(ge_precomp *h)
 {
     fe_1(h->yplusx);

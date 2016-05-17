@@ -70,6 +70,21 @@ int crypto_sign_verify_detached(const unsigned char *sig,
                                 const unsigned char *pk)
             __attribute__ ((warn_unused_result));
 
+SODIUM_EXPORT
+int crypto_sign_verify_cosi(const unsigned char *sig,
+			    unsigned long siglen,
+                            const unsigned char *m,
+                            unsigned long long mlen,
+                            const unsigned char *pklist,
+			    unsigned long pkcount,
+			    crypto_sign_cosi_policy policy,
+			    void *policy_data)
+            __attribute__ ((warn_unused_result));
+
+SODIUM_EXPORT
+int crypto_sign_threshold_policy(const unsigned char *mask,
+				 unsigned long pkcount,
+				 void *data);
 #ifdef __cplusplus
 }
 #endif

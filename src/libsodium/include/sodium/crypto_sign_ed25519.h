@@ -11,6 +11,10 @@
 extern "C" {
 #endif
 
+typedef int (*crypto_sign_cosi_policy)(const unsigned char *mask,
+				       unsigned long pkcount,
+				       void *data);
+
 #define crypto_sign_ed25519_BYTES 64U
 SODIUM_EXPORT
 size_t crypto_sign_ed25519_bytes(void);
@@ -51,6 +55,23 @@ int crypto_sign_ed25519_verify_detached(const unsigned char *sig,
                                         unsigned long long mlen,
                                         const unsigned char *pk)
             __attribute__ ((warn_unused_result));
+
+SODIUM_EXPORT
+int crypto_sign_ed25519_verify_cosi(const unsigned char *sig,
+				    unsigned long siglen,
+                                    const unsigned char *m,
+                                    unsigned long long mlen,
+                                    const unsigned char *pklist,
+				    unsigned long pkcount,
+				    crypto_sign_cosi_policy policy,
+				    void *policy_data)
+            __attribute__ ((warn_unused_result));
+
+SODIUM_EXPORT
+int crypto_sign_ed25519_threshold_policy(const unsigned char *mask,
+					 unsigned long pkcount,
+					 void *data);
+#define crypto_sign_ed25519_threshold_data(T) ((void*)(T))
 
 SODIUM_EXPORT
 int crypto_sign_ed25519_keypair(unsigned char *pk, unsigned char *sk);
