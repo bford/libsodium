@@ -210,10 +210,11 @@ crypto_sign_ed25519_verify_cosi(const unsigned char *sig,
             return -1;
         }
         if ((mask[i/8] & (1 << (i&7))) == 0) {
-            ge_p3_sub(&A, &A, &indA);
+            ge_p3_add(&A, &A, &indA);
         }
     }
     ge_p3_tobytes(pkagg, &A);
+    pkagg[31] ^= 0x80;
 
     crypto_hash_sha512_init(&hs);
     crypto_hash_sha512_update(&hs, sig, 32);
@@ -222,7 +223,6 @@ crypto_sign_ed25519_verify_cosi(const unsigned char *sig,
     crypto_hash_sha512_final(&hs, h);
     sc_reduce(h);
 
-    ge_p3_neg(&A, &A);
     ge_double_scalarmult_vartime(&R, h, &A, sig + 32);
     ge_tobytes(rcheck, &R);
 
